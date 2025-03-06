@@ -1,15 +1,15 @@
 import pytest
-
 from django.urls import reverse
+from django.conf import settings
 
-from yanews.settings import NEWS_COUNT_ON_HOME_PAGE
+pytestmark = pytest.mark.django_db
 
 
 def test_paginate_home_page(client, create_news_in_bulk):
     url = reverse('news:home')
     response = client.get(url)
     object_list = response.context['object_list']
-    assert len(object_list) == NEWS_COUNT_ON_HOME_PAGE
+    assert object_list.count() == settings.NEWS_COUNT_ON_HOME_PAGE
 
 
 def test_sorting_news(client, create_news_in_bulk):
@@ -21,7 +21,6 @@ def test_sorting_news(client, create_news_in_bulk):
     assert sorted_list == list_of_dates
 
 
-@pytest.mark.django_db
 def test_sorting_comments(client, news_obj, create_comments_in_bulk):
     url = reverse('news:detail', args=(news_obj.id,))
     response = client.get(url)
@@ -38,7 +37,6 @@ def test_sorting_comments(client, news_obj, create_comments_in_bulk):
         (pytest.lazy_fixture('not_author_client'), True)
     )
 )
-@pytest.mark.django_db
 def test_comment_form_on_page(parametrized_user, news_obj, form_in_list):
     url = reverse('news:detail', args=(news_obj.id,))
     response = parametrized_user.get(url)
