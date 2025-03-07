@@ -21,7 +21,6 @@ class TestRoutes(BaseTestClass):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_authorized_user_availability(self):
-        self.client.force_login(self.author)
         urls = (
             self.list_url,
             self.add_url,
@@ -30,20 +29,19 @@ class TestRoutes(BaseTestClass):
         for name in urls:
             with self.subTest(name=name):
                 url = name
-                response = self.client.get(url)
+                response = self.author_client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_accessability_for_different_users(self):
         users_statuses = (
-            (self.author, HTTPStatus.OK),
-            (self.reader, HTTPStatus.NOT_FOUND)
+            (self.author_client, HTTPStatus.OK),
+            (self.reader_client, HTTPStatus.NOT_FOUND)
         )
         for user, status in users_statuses:
-            self.client.force_login(user)
             for name in (self.detail_url, self.edit_url, self.delete_url):
                 with self.subTest(name=name, user=user):
                     url = name
-                    response = self.client.get(url)
+                    response = user.get(url)
                     self.assertEqual(response.status_code, status)
 
     def test_redirect_for_anonymous_user(self):

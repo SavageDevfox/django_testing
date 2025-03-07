@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.test.client import Client
+from django.urls import reverse
 from django.utils import timezone
 
 from news.forms import BAD_WORDS
@@ -99,3 +100,38 @@ def form_data_edit(news_obj, author):
 @pytest.fixture
 def string_with_bad_word():
     return f'Какой-то текст и {BAD_WORDS[0]}'
+
+
+@pytest.fixture
+def home_url():
+    return reverse('news:home')
+
+
+@pytest.fixture
+def detail_url(news_obj):
+    return reverse('news:detail', args=(news_obj.id,))
+
+
+@pytest.fixture
+def edit_url(comment_obj):
+    return reverse('news:edit', args=(comment_obj.id,))
+
+
+@pytest.fixture
+def delete_url(comment_obj):
+    return reverse('news:delete', args=(comment_obj.id,))
+
+
+@pytest.fixture
+def login_url():
+    return reverse('users:login')
+
+
+@pytest.fixture
+def logout_url():
+    return reverse('users:logout')
+
+
+@pytest.fixture
+def signup_url():
+    return reverse('users:signup')

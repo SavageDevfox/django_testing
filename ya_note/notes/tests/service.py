@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from notes.models import Note
@@ -29,3 +29,7 @@ class BaseTestClass(TestCase):
         cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
         cls.detail_url = reverse('notes:detail', args=(cls.note.slug,))
         cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
+        cls.author_client = Client()
+        cls.reader_client = Client()
+        cls.reader_client.force_login(cls.reader)
+        cls.author_client.force_login(cls.author)

@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from .service import BaseTestClass
+from notes.forms import WARNING
 from notes.models import Note
 
 User = get_user_model()
@@ -32,10 +33,9 @@ class TestLogic(BaseTestClass, TestCase):
         }
 
     def test_authorized_user_add_note(self):
-        self.client.force_login(self.author)
         Note.objects.all().delete()
         url = self.add_url
-        response = self.client.post(url, data=self.create_form_data)
+        response = self.author_client.post(url, data=self.create_form_data)
         self.assertRedirects(response, self.success_url)
         notes_count = Note.objects.count()
         note = Note.objects.get()
@@ -54,38 +54,31 @@ class TestLogic(BaseTestClass, TestCase):
         self.assertEqual(notes_count, 1)
 
     def test_create_note_with_same_slug(self):
-        self.client.force_login(self.author)
+        expected_num_of_comments = Note.objects.count()
         url = self.add_url
-        self.client.post(url, data={
-            'title': '-',
-            'text': '-',
-            'author': self.author,
-            'slug': self.SLUG
-        })
+        self.create_form_data['slug'] = self.SLUG
+        response = self.author_client.post(url, data=self.create_form_data)
         note_count = Note.objects.count()
-        self.assertEqual(note_count, 1)
+        self.assertEqual(note_count, expected_num_of_comments)
+        self.assertFormError(
+            response, 'form', 'slug', errors=(self.SLUG + WARNING))
 
     def test_create_note_with_no_slug(self):
-        self.client.force_login(self.author)
         url = self.add_url
-        self.client.post(url, data={
-            'title': self.TITLE,
-            'text': self.TEXT,
-            'author': self.author
-        })
+        del self.create_form_data['slug']
+        self.author_client.post(url, data=self.create_form_data)
         slug_in_note = Note.objects.get().slug
         self.assertEqual(slug_in_note, slugify(self.TITLE))
 
     def test_edit_for_different_users(self):
         users_statuses = (
-            (self.reader, False),
-            (self.author, True)
+            (self.reader_client, False),
+            (self.author_client, True)
         )
         for user, status in users_statuses:
             with self.subTest(user=user):
-                self.client.force_login(user)
                 url = self.edit_url
-                self.client.post(url, data=self.edit_form_data)
+                user.post(url, data=self.edit_form_data)
                 self.note.refresh_from_db()
                 if status:
                     self.assertEqual(self.note.text, self.TEXT_EDIT)
@@ -94,13 +87,12 @@ class TestLogic(BaseTestClass, TestCase):
 
     def test_delete_note(self):
         users_statuses = (
-            (self.reader, 1),
-            (self.author, 0)
+            (self.reader_client, 1),
+            (self.author_client, 0)
         )
         for user, status in users_statuses:
             with self.subTest(user=user):
-                self.client.force_login(user)
                 url = self.delete_url
-                self.client.post(url)
+                user.post(url)
                 note_count = Note.objects.count()
                 self.assertEqual(note_count, status)
