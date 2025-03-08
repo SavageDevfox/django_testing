@@ -1,7 +1,5 @@
 from http import HTTPStatus
 
-from django.urls import reverse
-
 from .service import BaseTestClass
 
 
@@ -9,14 +7,14 @@ class TestRoutes(BaseTestClass):
 
     def test_home_page(self):
         urls = (
-            ('users:login'),
-            ('users:logout'),
-            ('users:signup'),
-            ('notes:home')
+            self.login_url,
+            self.logout_url,
+            self.signup_url,
+            self.home_url
         )
         for name in urls:
             with self.subTest(name=name):
-                url = reverse(name)
+                url = name
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 

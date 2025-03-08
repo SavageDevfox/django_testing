@@ -70,20 +70,22 @@ class TestLogic(BaseTestClass, TestCase):
         slug_in_note = Note.objects.get().slug
         self.assertEqual(slug_in_note, slugify(self.TITLE))
 
-    def test_edit_for_different_users(self):
-        users_statuses = (
-            (self.reader_client, False),
-            (self.author_client, True)
-        )
-        for user, status in users_statuses:
-            with self.subTest(user=user):
-                url = self.edit_url
-                user.post(url, data=self.edit_form_data)
-                self.note.refresh_from_db()
-                if status:
-                    self.assertEqual(self.note.text, self.TEXT_EDIT)
-                else:
-                    self.assertEqual(self.note.text, self.TEXT)
+    def test_edit_for_author(self):
+        url = self.edit_url
+        self.author_client.post(url, self.edit_form_data)
+        self.note.refresh_from_db()
+        self.assertEqual(self.note.title, self.edit_form_data['title'])
+        self.assertEqual(self.note.text, self.edit_form_data['text'])
+        self.assertEqual(self.note.slug, self.edit_form_data['slug'])
+
+    def test_edit_for_not_author(self):
+        note_before_edit = self.note
+        url = self.edit_url
+        self.reader_client.post(url, self.edit_form_data)
+        note_after_edit = Note.objects.get()
+        self.assertEqual(note_before_edit.title, note_after_edit.title)
+        self.assertEqual(note_before_edit.text, note_after_edit.text)
+        self.assertEqual(note_before_edit.slug, note_after_edit.slug)
 
     def test_delete_note(self):
         users_statuses = (
@@ -96,3 +98,22 @@ class TestLogic(BaseTestClass, TestCase):
                 user.post(url)
                 note_count = Note.objects.count()
                 self.assertEqual(note_count, status)
+
+    def test_delete_for_author(self):
+        note_count_before_delete = Note.objects.count()
+        url = self.delete_url
+        self.author_client.post(url)
+        note_count = Note.objects.count()
+        self.assertEqual(note_count, note_count_before_delete - 1)
+
+    def test_delete_for_not_author(self):
+        note_before_delete = self.note
+        note_count_before_delete = Note.objects.count()
+        url = self.delete_url
+        self.reader_client.post(url)
+        note_counte_after_delete = Note.objects.count()
+        self.assertEqual(note_count_before_delete, note_counte_after_delete)
+        note_after_delete = Note.objects.get()
+        self.assertEqual(note_before_delete.title, note_after_delete.title)
+        self.assertEqual(note_before_delete.text, note_after_delete.text)
+        self.assertEqual(note_before_delete.slug, note_after_delete.slug)
